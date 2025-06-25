@@ -14,3 +14,10 @@
 **Запуск без бинарного файла**
 
 Для запуска потребуется jdk-21. Команда: java -jar %filename%.jar
+
+**Компиляция лаунчера**
+
+Требуется MinGW. Команды:
+1. windres resources.rc -O coff -o resources.res
+2. g++ -Wall -fexceptions -g -c main.cpp -o main.o
+3. g++ -o PushToTalkLauncher.exe main.o resources.res -static
