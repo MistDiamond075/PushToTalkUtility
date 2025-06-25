@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1750842499 source:c:\programms\codeblocks\out\pushtotalkloggerlauncher\resources.rc
+
+1750861002 source:c:\programms\codeblocks\out\pushtotalkloggerlauncher\main.cpp
+	<iostream>
+	<windows.h>
+	<fstream>
+	<iostream>
+	<vector>
+	<csignal>
+
