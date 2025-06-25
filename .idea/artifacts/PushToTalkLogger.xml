@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="PushToTalkLogger">
+    <output-path>$PROJECT_DIR$</output-path>
+    <root id="archive" name="PushToTalkLogger.jar">
+      <element id="module-output" name="PushToTalkUtility" />
+      <element id="library" level="project" name="Maven: com.github.kwhat:jnativehook:2.2.2" />
+      <element id="library" level="project" name="Maven: org.java-websocket:Java-WebSocket:1.6.0" />
+      <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:2.0.13" />
+    </root>
+  </artifact>
+</component>
