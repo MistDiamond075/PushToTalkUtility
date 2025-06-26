@@ -6,8 +6,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import org.fusesource.jansi.AnsiConsole;
 import org.json.JSONObject;
 
-import java.lang.reflect.Field;
-
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
 
@@ -20,13 +19,15 @@ public class Main {
     private static boolean pressed=false;
     private static boolean released=false;
     private static final Set<Integer> keys= new HashSet<>(2);
+    private static boolean criticalError=false;
 
-    public static void main( String[] args ) {
+    public static void main( String[] arguments) {
         System.setProperty("jansi.force", "true");
         AnsiConsole.systemInstall();
-        String strPort=System.getProperty("port",defaultPort);
+        Map<String, String> args = Parser.parseArgs(arguments);
+        String strPort = args.getOrDefault("port", defaultPort);
         try {
-            mode = Mode.valueOf(System.getProperty("mode", Mode.NORMAL.toString()).toUpperCase());
+            mode = Mode.valueOf(args.getOrDefault("mode", "NORMAL").toUpperCase());
         }catch (IllegalArgumentException e){
             logger.warning("incorrect mode "+mode+". Set normal mode");
             mode = Mode.NORMAL;
@@ -34,6 +35,7 @@ public class Main {
             setLoggerSettings(logger);
             logger.info("info level: "+mode.toString());
         }
+        setLoggerSettings(Parser.getLogger());
         int port;
         try {
              port= Integer.parseInt(strPort);
@@ -42,6 +44,19 @@ public class Main {
             logger.warning("an error occurred when trying to set "+strPort+" port. Using default port "+defaultPort+" instead");
             port=60602;
         }
+        boolean autostartRequired= !args.containsKey("disable_autostart");
+        if(autostartRequired) {
+            boolean autostartInstalled=Autostart.isAutostartRegistered();
+            if(!autostartInstalled) {
+                setLoggerSettings(Autostart.getLogger());
+                logger.info("setting autostart...");
+                Autostart.setAutostart();
+            }else {
+                logger.info("autostart is already set");
+            }
+        }else{
+            logger.info("autostart disabled");
+        }
         KeyloggerWebSocket ws=new KeyloggerWebSocket(port);
         ws.start();
         setShutdownEventListener(ws);
@@ -49,6 +64,9 @@ public class Main {
         ws.waitForConnection();
         try {
             GlobalScreen.registerNativeHook();
+            if(mode==Mode.DEBUG) {
+                System.out.println();
+            }
             logger.fine("registered Native Hook");
         } catch (Exception e) {
             logger.severe("There was a problem registering the native hook.");
@@ -101,28 +119,20 @@ public class Main {
         logger.addHandler(handler);
     }
 
-    private static int parseKey(String strKey){
-        try {
-            String constName = "VC_" + strKey.toUpperCase();
-            Field field = NativeKeyEvent.class.getField(constName);
-            logger.fine("parsed key: "+field.getInt(null));
-            return field.getInt(null);
-        } catch (Exception e) {
-            logger.warning("undefined key " + strKey);
-            return NativeKeyEvent.VC_UNDEFINED;
-        }
-    }
-
     public static void setKeys(List<String> keysArray) {
         for (String key : keysArray) {
             logger.fine("parsing key "+key);
-            keys.add(parseKey(key));
+            keys.add(Parser.parseKey(key));
         }
     }
 
     public static void removeOldKeys(){
         keys.clear();
         logger.fine("old keys removed");
+    }
+
+    public static void setCriticalError(boolean criticalError) {
+        Main.criticalError = criticalError;
     }
 
     private static void setShutdownEventListener(KeyloggerWebSocket ws){
@@ -141,6 +151,14 @@ public class Main {
             } catch (Exception e) {
                 logger.severe("unable to send websocket shutdown message: "+e.getMessage());
                 logger.severe(Arrays.toString(e.getStackTrace()));
+            }
+            if(criticalError) {
+                System.out.println(LoggerFormatter.Colors.RESET.color+"window will be automatically closed in 15 seconds...");
+                try {
+                    Thread.sleep(15000);
+                } catch (InterruptedException e) {
+                    System.exit(1);
+                }
             }
         }));
     }

@@ -1,5 +1,10 @@
 package org.diplom.keylogger;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Random;
 import java.util.logging.Formatter;
@@ -45,8 +50,10 @@ public class LoggerFormatter extends Formatter {
             case "FINE" -> color = Colors.PURPLE.color;
             default -> color = Colors.RESET.color;
         }
+        Instant instant = Instant.ofEpochMilli(record.getMillis());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm:ss VV");
         return Colors.CYAN.color+
-                "["+new Date(record.getMillis())+"] "+
+                "["+ ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()).format(formatter) +"] "+
                 color+
                 "["+record.getLevel().getName()+"] "+
                 Colors.WHITE.color+

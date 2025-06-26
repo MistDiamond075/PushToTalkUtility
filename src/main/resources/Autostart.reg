@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\pttutility]
+@="URL:Push-To-Talk Logger Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\pttutility\shell\open\command]
+@="\"%EXE_PATH%\" \"%1\""

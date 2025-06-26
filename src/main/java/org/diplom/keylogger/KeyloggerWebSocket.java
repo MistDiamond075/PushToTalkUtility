@@ -6,7 +6,13 @@ import org.java_websocket.server.WebSocketServer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -59,7 +65,13 @@ public class KeyloggerWebSocket extends WebSocketServer {
 
     @Override
     public void onError(WebSocket webSocket, Exception e) {
-        logger.warning("websocket error: "+e.getMessage());
+        if(e instanceof IOException || e instanceof SecurityException){
+            logger.severe("websocket critical error: " + e.getMessage());
+            Main.setCriticalError(true);
+            System.exit(1);
+        }else {
+            logger.warning("websocket error: " + e.getMessage());
+        }
     }
 
     @Override
@@ -104,18 +116,25 @@ public class KeyloggerWebSocket extends WebSocketServer {
 
     public void waitForConnection(){
         AtomicInteger dotCount = new AtomicInteger(0);
-        ScheduledFuture<?> task = KeyloggerTaskExecutor.getScheduler().scheduleAtFixedRate(() -> {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm:ss VV");
+        String now = ZonedDateTime.now().format(formatter);
+        ScheduledFuture<?>[] task = new ScheduledFuture<?>[1];
+        task[0] = KeyloggerTaskExecutor.getScheduler().scheduleAtFixedRate(() -> {
             if (client.isDone()) {
+                System.out.println();
+                task[0].cancel(true);
                 return;
             }
             int count = dotCount.updateAndGet(n -> (n % 6) +1);
-            logger.fine("points count: "+count);
-            System.out.print(LoggerFormatter.Colors.WHITE.color+ "\rwaiting for client connection"+ LoggerFormatter.Colors.randomColor().color + ".".repeat(count-1));
+           // logger.fine("points count: "+count);
+            System.out.print(
+                    LoggerFormatter.Colors.CYAN.color+
+                    "\r["+ now +"] "+
+                    LoggerFormatter.Colors.GREEN.color +"[INFO] "+
+                    LoggerFormatter.Colors.WHITE.color+ "waiting for client connection"+
+                    LoggerFormatter.Colors.randomColor().color + ".".repeat(count-1)
+            );
             System.out.flush();
         }, 0, 700, TimeUnit.MILLISECONDS);
-        if(client.isDone()){
-            System.out.println();
-            task.cancel(false);
-        }
     }
 }
