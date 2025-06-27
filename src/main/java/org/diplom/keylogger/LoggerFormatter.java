@@ -1,11 +1,9 @@
 package org.diplom.keylogger;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Random;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -16,17 +17,11 @@ public class Autostart {
 
     public static void setAutostart() {
         try {
-            Path exePath = Paths.get(Main.class.getProtectionDomain()
-                            .getCodeSource().getLocation().toURI())
-                    .toAbsolutePath();
-
-            if (!exePath.toString().endsWith(".exe")) {
-                exePath = exePath.resolve("..")
-                        .resolve("PushToTalkUtility.exe")
-                        .normalize();
+            final Path exePath = getExePath();
+            if(exePath == null) {
+                return;
             }
-            final Path finalExePath = exePath;
-            logger.fine("exe path: " + finalExePath);
+            logger.fine("exe path: " + exePath);
             InputStream regStream = Main.class.getResourceAsStream("/Autostart.reg");
             if (regStream == null) {
                 throw new IOException("Autostart not found");
@@ -35,7 +30,7 @@ public class Autostart {
                     .lines()
                     .collect(Collectors.toList());
             List<String> updated = lines.stream()
-                    .map(line -> line.replace("%EXE_PATH%", finalExePath.toString().replace("\\", "\\\\")))
+                    .map(line -> line.replace("%EXE_PATH%", exePath.toString().replace("\\", "\\\\")))
                     .collect(Collectors.toList());
             Path tempReg = Files.createTempFile("autostart", ".reg");
             logger.fine("temp .reg file path: " + tempReg);
@@ -58,7 +53,7 @@ public class Autostart {
                 logger.warning("autostart was not set because of unknown error");
             }
             Files.deleteIfExists(tempReg);
-        }catch (URISyntaxException | IOException | InterruptedException e){
+        }catch (IOException | InterruptedException e){
             logger.warning("autostart setting failed: "+e.getMessage());
             logger.fine(Arrays.toString(e.getStackTrace()));
         }
@@ -95,10 +90,10 @@ public class Autostart {
         }
         logger.info("removing autostart...");
         try {
-            ProcessBuilder pb = new ProcessBuilder("powershell", "-Command",
-                    "Start-Process", "cmd",
-                    "-ArgumentList", "\"/c reg delete HKEY_CLASSES_ROOT\\pttutility /f\"",
-                    "-Verb", "runAs");
+            ProcessBuilder pb = new ProcessBuilder(
+                    "powershell", "-Command",
+                    "Start-Process cmd -ArgumentList '/c reg delete \"HKEY_CLASSES_ROOT\\pttutility\" /f' -Verb runAs"
+            );
             pb.inheritIO();
             Process process = pb.start();
             int exitCode = process.waitFor();
@@ -116,5 +111,25 @@ public class Autostart {
 
     public static Logger getLogger() {
         return logger;
+    }
+
+    private static Path getExePath() {
+        Optional<String> command = ProcessHandle.current().info().command();
+        if (command.isPresent() && command.get().toLowerCase().endsWith(".exe")) {
+            return Paths.get(command.get());
+        }
+        try {
+            return Paths.get(Main.class.getProtectionDomain()
+                            .getCodeSource().getLocation().toURI())
+                    .getParent()
+                    .getParent()
+                    .resolve("PushToTalkUtility.exe")
+                    .toAbsolutePath()
+                    .normalize();
+        } catch (URISyntaxException e) {
+            logger.warning("can't determine exe path "+ e.getMessage());
+            logger.fine(Arrays.toString(e.getStackTrace()));
+        }
+        return null;
     }
 }

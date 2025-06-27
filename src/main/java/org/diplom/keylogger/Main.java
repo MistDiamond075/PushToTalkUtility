@@ -6,14 +6,12 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import org.fusesource.jansi.AnsiConsole;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
 
 public class Main {
     private static final Logger logger = Logger.getLogger(Main.class.getName());
     private enum Mode{DEBUG,NORMAL}
-    private static final String OSname=System.getProperty("os.name").toLowerCase();;
     private static Mode mode;
     private static final String defaultPort="60602";
     private static boolean pressed=false;
@@ -36,6 +34,7 @@ public class Main {
             logger.info("info level: "+mode.toString());
         }
         setLoggerSettings(Parser.getLogger());
+        setLoggerSettings(Autostart.getLogger());
         int port;
         try {
              port= Integer.parseInt(strPort);
