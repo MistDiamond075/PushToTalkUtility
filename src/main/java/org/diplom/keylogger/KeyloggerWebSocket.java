@@ -41,6 +41,7 @@ public class KeyloggerWebSocket extends WebSocketServer {
         this.client = new CompletableFuture<>();
         logger.info("disconnected from client. Reason: " + reason+'\t'+"Code: "+code);
         Main.removeOldKeys();
+        waitForConnection();
     }
 
     @Override
